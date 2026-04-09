@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DianneWheel — Spin Wheel for spookydianne</title>
+  <meta name="description" content="Channel point redemption spin wheel for Twitch streamer spookydianne">
+
+  <!-- Preload font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="app-layout">
+
+  <!-- ===== Top bar ===== -->
+  <header id="top-bar">
+    <div class="app-title">
+      <span>🎡</span> DianneWheel
+    </div>
+    <div class="topbar-actions">
+      <button id="settings-toggle" class="icon-btn" title="Settings" aria-label="Toggle settings" aria-expanded="false">⚙</button>
+    </div>
+  </header>
+
+  <!-- ===== Sidebar: Entry editor ===== -->
+  <aside id="sidebar">
+    <div class="add-form">
+      <input type="text" id="add-option-input" placeholder="Add an option..." maxlength="50" aria-label="New option text">
+      <button id="add-option-btn" class="btn btn-primary" aria-label="Add option">Add</button>
+    </div>
+
+    <div class="options-header">
+      <h2>Options</h2>
+      <span id="option-count" class="option-count">0 active / 0 total</span>
+    </div>
+
+    <div id="options-list" role="list" aria-label="Wheel options"></div>
+
+    <div class="bulk-actions">
+      <button id="clear-all-btn" class="btn btn-danger btn-sm">Clear All</button>
+      <button id="reset-sample-btn" class="btn btn-sm">Reset Samples</button>
+    </div>
+  </aside>
+
+  <!-- ===== Main wheel area ===== -->
+  <main id="main-area">
+    <div class="wheel-container">
+      <div class="wheel-pointer" aria-hidden="true"></div>
+      <canvas id="wheel-canvas"></canvas>
+    </div>
+    <button id="spin-btn" aria-label="Spin the wheel">SPIN</button>
+  </main>
+
+  <!-- ===== History panel ===== -->
+  <section id="history-panel">
+    <div class="history-header">
+      <h2>Recent Results</h2>
+      <button id="clear-history-btn" class="btn btn-sm">Clear</button>
+    </div>
+    <div id="history-list" aria-live="polite">
+      <div class="history-empty">No spins yet</div>
+    </div>
+  </section>
+
+</div>
+
+<!-- ===== Winner banner (overlay) ===== -->
+<div id="winner-banner" role="alert" aria-live="assertive">
+  <div class="winner-label">Winner!</div>
+  <div id="winner-text"></div>
+  <button class="winner-dismiss" onclick="this.parentElement.classList.remove('show')">OK</button>
+</div>
+
+<!-- ===== Settings panel (slide-in) ===== -->
+<div id="settings-panel" role="dialog" aria-label="Settings">
+  <div class="settings-group">
+    <h3>Wheel</h3>
+    <div class="setting-row">
+      <label for="spin-duration">Spin duration</label>
+      <div class="range-group">
+        <input type="range" id="spin-duration" min="2000" max="10000" step="500">
+        <span id="spin-duration-label" class="range-value">5.0s</span>
+      </div>
+    </div>
+    <div class="setting-row">
+      <label for="setting-confetti">Confetti</label>
+      <div class="toggle-switch">
+        <input type="checkbox" id="setting-confetti">
+        <span class="toggle-slider"></span>
+      </div>
+    </div>
+    <div class="setting-row">
+      <label for="setting-sound">Sound effects</label>
+      <div class="toggle-switch">
+        <input type="checkbox" id="setting-sound">
+        <span class="toggle-slider"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="settings-group">
+    <h3>Display</h3>
+    <div class="setting-row">
+      <label for="setting-transparent">Transparent background</label>
+      <div class="toggle-switch">
+        <input type="checkbox" id="setting-transparent">
+        <span class="toggle-slider"></span>
+      </div>
+    </div>
+    <div class="setting-row">
+      <label for="setting-controls">Show controls</label>
+      <div class="toggle-switch">
+        <input type="checkbox" id="setting-controls">
+        <span class="toggle-slider"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="settings-group">
+    <h3>Data</h3>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+      <button id="export-btn" class="btn btn-sm">Export JSON</button>
+      <button id="import-btn" class="btn btn-sm">Import JSON</button>
+      <input type="file" id="import-input" accept=".json" class="sr-only">
+    </div>
+  </div>
+
+  <div class="settings-group">
+    <h3>Reset</h3>
+    <button id="reset-all-btn" class="btn btn-danger btn-sm">Reset Everything</button>
+  </div>
+</div>
+
+<!-- ===== Notice toast ===== -->
+<div id="notice" class="notice" aria-live="polite"></div>
+
+<!-- ===== App script ===== -->
+<script type="module" src="js/app.js"></script>
+
+</body>
+</html>
