@@ -163,7 +163,7 @@ class AppState {
         options: this.options,
         settings: this.settings,
         history: this.history,
-        showControls: this.showControls,
+        // showControls intentionally NOT saved — overlay mode is URL-driven
       };
       localStorage.setItem('diannewheel_state', JSON.stringify(data));
     } catch {
@@ -186,9 +186,7 @@ class AppState {
       if (data.history && Array.isArray(data.history)) {
         this.history = data.history;
       }
-      if (typeof data.showControls === 'boolean') {
-        this.showControls = data.showControls;
-      }
+      // showControls intentionally NOT loaded — overlay mode is URL-driven
       return true;
     } catch {
       return false;

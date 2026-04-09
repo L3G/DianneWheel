@@ -62,16 +62,15 @@ function init() {
   // (Stream Deck, Mix It Up, Firebot, websocket, etc.)
   window.spinWheel = triggerSpin;
 
-  // URL param: ?overlay=true activates OBS overlay mode
-  // This hides all controls and shows just the wheel, centered and fullscreen.
-  // Use as OBS Browser Source: http://yoursite.com/?overlay=true
+  // Overlay mode is purely URL-driven — not persisted to localStorage.
+  // Normal URL = always shows controls. ?overlay=true = always hides them.
+  // This prevents visiting the overlay URL from "infecting" the control view.
   const params = new URLSearchParams(window.location.search);
-  if (params.get('overlay') === 'true') {
-    state.setShowControls(false);
-    const ctrl = document.getElementById('setting-controls');
-    if (ctrl) ctrl.checked = false;
-    applyControlsVisibility(false);
-  }
+  const isOverlay = params.get('overlay') === 'true';
+  state.showControls = !isOverlay;  // Set directly, don't persist
+  const ctrl = document.getElementById('setting-controls');
+  if (ctrl) ctrl.checked = !isOverlay;
+  applyControlsVisibility(!isOverlay);
 }
 
 // --- Spin logic ---
