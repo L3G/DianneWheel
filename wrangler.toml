@@ -17,4 +17,4 @@ directory = "./public"
 #   3. Run: npx wrangler deploy
 [[kv_namespaces]]
 binding = "SPIN_SIGNALS"
-id = "PASTE_YOUR_KV_NAMESPACE_ID_HERE"
+id = "9286f7b42c4b4ae1b1c673272337f8f6"
