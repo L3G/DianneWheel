@@ -190,12 +190,9 @@
       document.getElementById('wheel-name').textContent = `${wheelId} wheel`;
     }
 
-    // --- BroadcastChannel setup ---
+    // --- BroadcastChannel (fast path for same-browser tabs) ---
     try {
       channel = new BroadcastChannel(channelName);
-      statusEl.textContent = `Connected — ready to spin${wheelId !== 'default' ? ` (${wheelId})` : ''}`;
-      statusEl.className = 'connected';
-
       channel.onmessage = (e) => {
         if (e.data?.type === 'result') {
           spinning = false;
@@ -205,18 +202,36 @@
         }
       };
     } catch {
-      statusEl.textContent = 'BroadcastChannel not supported in this browser';
-      statusEl.className = 'error';
-      spinBtn.disabled = true;
+      // BroadcastChannel not available — API relay will handle it
     }
 
+    statusEl.textContent = `Ready to spin${wheelId !== 'default' ? ` (${wheelId})` : ''}`;
+    statusEl.className = 'connected';
+
     // --- Spin trigger ---
-    function triggerSpin() {
-      if (spinning || !channel) return;
+    // Sends spin command via both BroadcastChannel (for same-browser)
+    // and the API relay (for OBS Browser Source).
+    async function triggerSpin() {
+      if (spinning) return;
       spinning = true;
       spinBtn.disabled = true;
       spinBtn.textContent = '...';
-      channel.postMessage({ type: 'spin' });
+
+      // BroadcastChannel — instant for same-browser tabs
+      if (channel) {
+        channel.postMessage({ type: 'spin' });
+      }
+
+      // API relay — reaches OBS Browser Source
+      try {
+        await fetch('/api/spin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ wheel: wheelId }),
+        });
+      } catch {
+        // API not available (local dev) — BroadcastChannel is the fallback
+      }
 
       // Safety timeout: re-enable after 12s in case result message is lost
       setTimeout(() => {

@@ -1,0 +1,20 @@
+# DianneWheel — Cloudflare Workers config
+# ==========================================
+# Static files in public/ are served automatically.
+# The Worker handles /api/* routes for spin signaling.
+
+name = "dianne-wheel"
+main = "src/worker.js"
+compatibility_date = "2024-09-23"
+
+[assets]
+directory = "./public"
+
+# KV namespace for spin signals between control page and OBS overlay.
+# To set up:
+#   1. Run: npx wrangler kv namespace create SPIN_SIGNALS
+#   2. Copy the id from the output and paste it below
+#   3. Run: npx wrangler deploy
+[[kv_namespaces]]
+binding = "SPIN_SIGNALS"
+id = "PASTE_YOUR_KV_NAMESPACE_ID_HERE"

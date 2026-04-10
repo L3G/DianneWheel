@@ -90,6 +90,32 @@ function init() {
   const ctrl = document.getElementById('setting-controls');
   if (ctrl) ctrl.checked = !isOverlay;
   applyControlsVisibility(!isOverlay);
+
+  // --- API polling: remote spin for OBS Browser Source ---
+  // BroadcastChannel only works within the same browser process.
+  // OBS runs its own Chromium, so we also poll a server-side API
+  // to receive spin commands from the control page.
+  startSpinPolling();
+}
+
+let lastSpinTs = 0;
+
+function startSpinPolling() {
+  // Poll every 1 second for spin signals from the control page
+  setInterval(async () => {
+    if (state.isSpinning) return; // don't poll while already spinning
+    try {
+      const res = await fetch(`/api/spin?wheel=${encodeURIComponent(wheelId)}&after=${lastSpinTs}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.spin && data.ts > lastSpinTs) {
+        lastSpinTs = data.ts;
+        triggerSpin();
+      }
+    } catch {
+      // API not available (local dev, or KV not configured) — silently ignore
+    }
+  }, 1000);
 }
 
 // --- Spin logic ---

@@ -43,31 +43,24 @@ Click the ⚙ gear icon in the top right to open settings:
 
 You need **two browser tabs** open in the same browser (e.g. Chrome):
 
-### Tab 1: The overlay (what viewers see)
+### Step 1: Add the wheel to OBS
 
-1. Open your site with `?overlay=true` at the end:
+1. In OBS, add a **Browser Source**
+2. Set the URL to:
    ```
-   https://your-site-here.pages.dev/?overlay=true
+   https://dianne-wheel.lumeabus.workers.dev/?overlay=true
    ```
-2. This shows just the wheel with a transparent background — no controls.
+3. Set width to **1920** and height to **1080**
+4. The wheel appears with a transparent background over your stream
 
-### Tab 2: The remote control (what you use)
+### Step 2: Open the remote control
 
-1. Open the control page:
+1. Open this in your regular browser (Chrome, Firefox, etc.):
    ```
-   https://your-site-here.pages.dev/control.html
+   https://dianne-wheel.lumeabus.workers.dev/control.html
    ```
-2. This has a big SPIN button and shows results.
-3. When you click SPIN here, the wheel in Tab 1 spins automatically.
-
-### Adding it to OBS
-
-1. In OBS, add a **Window Capture** source
-2. Select the browser window/tab that has the overlay open
-3. Crop it to just the wheel area if needed
-4. When you click SPIN on the control page, the captured wheel spins live on stream
-
-**Alternatively**, you can add a **Browser Source** in OBS pointed at the `?overlay=true` URL, and spin it by right-clicking the source → **Interact** → clicking the SPIN button. The remote control method above is easier during a live stream.
+2. Click the big **SPIN** button (or press Spacebar)
+3. The wheel in OBS spins automatically
 
 ---
 
@@ -88,14 +81,21 @@ Each wheel saves its own options separately. You can have as many as you want �
 
 ---
 
-## Deploying to Cloudflare Pages
+## Deploying to Cloudflare Workers
 
-1. Fork or push this repo to your GitHub account
-2. Go to [dash.cloudflare.com](https://dash.cloudflare.com)
-3. Click **Workers & Pages** → **Create** → **Pages** → **Connect to Git**
-4. Select the **DianneWheel** repository
-5. Leave **Build command** blank
-6. Set **Build output directory** to `/`
-7. Click **Save and Deploy**
+The app uses Cloudflare Workers with KV storage so the remote control can communicate with the OBS overlay.
 
-Your site will be live at `something.pages.dev` within a minute. Every push to `main` auto-deploys.
+### First-time setup
+
+1. Install wrangler: `npm install -g wrangler`
+2. Log in: `npx wrangler login`
+3. Create the KV namespace:
+   ```
+   npx wrangler kv namespace create SPIN_SIGNALS
+   ```
+4. Copy the `id` from the output and paste it into `wrangler.toml`
+5. Deploy: `npx wrangler deploy`
+
+### After that
+
+Just run `npx wrangler deploy` to push updates, or set up a GitHub Action to auto-deploy on push.
