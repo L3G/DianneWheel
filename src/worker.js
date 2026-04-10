@@ -23,19 +23,25 @@ export default {
 
     // --- POST /api/spin — trigger a spin ---
     if (url.pathname === '/api/spin' && request.method === 'POST') {
+      let wheelIdRaw = 'default';
       try {
         const body = await request.json();
-        const wheelId = sanitizeId(body.wheel || 'default');
-        const ts = Date.now();
-        await env.SPIN_SIGNALS.put(`spin:${wheelId}`, JSON.stringify({ ts }), {
-          expirationTtl: 30, // auto-expire after 30 seconds
+        wheelIdRaw = body.wheel || 'default';
+      } catch {
+        // Body parsing failed — use default
+      }
+      const wheelIdVal = sanitizeId(wheelIdRaw);
+      const ts = Date.now();
+      try {
+        await env.SPIN_SIGNALS.put(`spin:${wheelIdVal}`, JSON.stringify({ ts }), {
+          expirationTtl: 60,
         });
-        return Response.json({ ok: true, ts }, { headers: corsHeaders() });
       } catch (err) {
-        return Response.json({ ok: false, error: 'Bad request' }, {
-          status: 400, headers: corsHeaders(),
+        return Response.json({ ok: false, error: 'KV write failed: ' + String(err) }, {
+          status: 500, headers: corsHeaders(),
         });
       }
+      return Response.json({ ok: true, ts }, { headers: corsHeaders() });
     }
 
     // --- GET /api/spin?wheel=default&after=0 — poll for spin signal ---
