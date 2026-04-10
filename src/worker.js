@@ -58,6 +58,33 @@ export default {
       });
     }
 
+    // --- POST /api/options — save wheel options so OBS overlay can read them ---
+    if (url.pathname === '/api/options' && request.method === 'POST') {
+      try {
+        const body = await request.json();
+        const wheelIdVal = sanitizeId(body.wheel || 'default');
+        await env.SPIN_SIGNALS.put(`options:${wheelIdVal}`, JSON.stringify({
+          options: body.options,
+          settings: body.settings,
+          updatedAt: Date.now(),
+        }));
+        return Response.json({ ok: true }, { headers: corsHeaders() });
+      } catch (err) {
+        return Response.json({ ok: false, error: String(err) }, {
+          status: 500, headers: corsHeaders(),
+        });
+      }
+    }
+
+    // --- GET /api/options?wheel=default — overlay fetches current options ---
+    if (url.pathname === '/api/options' && request.method === 'GET') {
+      const wheelIdVal = sanitizeId(url.searchParams.get('wheel') || 'default');
+      const data = await env.SPIN_SIGNALS.get(`options:${wheelIdVal}`, 'json');
+      return Response.json(data || { options: null, settings: null, updatedAt: 0 }, {
+        headers: { ...corsHeaders(), 'Cache-Control': 'no-store' },
+      });
+    }
+
     // Unmatched API routes
     if (url.pathname.startsWith('/api/')) {
       return Response.json({ error: 'Not found' }, {

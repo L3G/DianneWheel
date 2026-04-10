@@ -91,19 +91,24 @@ function init() {
   if (ctrl) ctrl.checked = !isOverlay;
   applyControlsVisibility(!isOverlay);
 
-  // --- API polling: remote spin for OBS Browser Source ---
-  // BroadcastChannel only works within the same browser process.
-  // OBS runs its own Chromium, so we also poll a server-side API
-  // to receive spin commands from the control page.
-  startSpinPolling();
+  // --- API sync ---
+  if (isOverlay) {
+    // OVERLAY: poll for spin signals AND option changes from the editor
+    startOverlayPolling();
+  } else {
+    // EDITOR: push option changes to the API so the overlay picks them up
+    startEditorSync();
+    // Also poll for spin signals (for same-browser remote control)
+    startSpinPolling();
+  }
 }
 
 let lastSpinTs = 0;
+let lastOptionsTs = 0;
 
 function startSpinPolling() {
-  // Poll every 1 second for spin signals from the control page
   setInterval(async () => {
-    if (state.isSpinning) return; // don't poll while already spinning
+    if (state.isSpinning) return;
     try {
       const res = await fetch(`/api/spin?wheel=${encodeURIComponent(wheelId)}&after=${lastSpinTs}`);
       if (!res.ok) return;
@@ -113,9 +118,78 @@ function startSpinPolling() {
         triggerSpin();
       }
     } catch {
-      // API not available (local dev, or KV not configured) — silently ignore
+      // API not available — silently ignore
     }
   }, 1000);
+}
+
+function startOverlayPolling() {
+  // Poll for both spin signals and option changes
+  setInterval(async () => {
+    try {
+      // Check for spin signal
+      if (!state.isSpinning) {
+        const spinRes = await fetch(`/api/spin?wheel=${encodeURIComponent(wheelId)}&after=${lastSpinTs}`);
+        if (spinRes.ok) {
+          const spinData = await spinRes.json();
+          if (spinData.spin && spinData.ts > lastSpinTs) {
+            lastSpinTs = spinData.ts;
+            triggerSpin();
+          }
+        }
+      }
+
+      // Check for option updates from the editor
+      const optRes = await fetch(`/api/options?wheel=${encodeURIComponent(wheelId)}`);
+      if (optRes.ok) {
+        const optData = await optRes.json();
+        if (optData.updatedAt && optData.updatedAt > lastOptionsTs) {
+          lastOptionsTs = optData.updatedAt;
+          if (optData.options) {
+            state.options = optData.options;
+          }
+          if (optData.settings) {
+            Object.assign(state.settings, optData.settings);
+          }
+          // Trigger re-render without saving back to API
+          state._notify();
+        }
+      }
+    } catch {
+      // API not available — silently ignore
+    }
+  }, 1000);
+}
+
+// Debounced push of options to API whenever the editor changes them
+function startEditorSync() {
+  let syncTimeout = null;
+  state.subscribe(() => {
+    // Don't sync while spinning (would push mid-spin state)
+    if (state.isSpinning) return;
+    clearTimeout(syncTimeout);
+    syncTimeout = setTimeout(() => {
+      pushOptionsToAPI();
+    }, 500); // debounce: wait 500ms after last change
+  });
+  // Push current state immediately on load
+  pushOptionsToAPI();
+}
+
+async function pushOptionsToAPI() {
+  try {
+    await fetch('/api/options', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        wheel: wheelId,
+        options: state.options,
+        settings: state.settings,
+      }),
+    });
+  } catch {
+    // API not available — silently ignore
+  }
 }
 
 // --- Spin logic ---
