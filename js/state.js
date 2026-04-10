@@ -7,6 +7,20 @@
 
 import { generateId, sampleEntries, defaultSettings } from './utils.js';
 
+/**
+ * Read the ?wheel= URL param to determine which wheel instance this is.
+ * Each wheel ID gets its own localStorage key and BroadcastChannel,
+ * so multiple wheels (e.g. "val", "horror") are fully independent.
+ */
+const params = new URLSearchParams(window.location.search);
+export const wheelId = params.get('wheel') || 'default';
+export const storageKey = wheelId === 'default'
+  ? 'diannewheel_state'
+  : `diannewheel_state_${wheelId}`;
+export const channelName = wheelId === 'default'
+  ? 'diannewheel'
+  : `diannewheel_${wheelId}`;
+
 class AppState {
   constructor() {
     this.options = [];
@@ -15,6 +29,7 @@ class AppState {
     this.currentWinner = null;
     this.isSpinning = false;
     this.showControls = true;
+    this.wheelId = wheelId;
     this._listeners = new Set();
     this._storageAvailable = null; // lazy check
   }
@@ -165,7 +180,7 @@ class AppState {
         history: this.history,
         // showControls intentionally NOT saved — overlay mode is URL-driven
       };
-      localStorage.setItem('diannewheel_state', JSON.stringify(data));
+      localStorage.setItem(storageKey, JSON.stringify(data));
     } catch {
       // Silently fail — storage is optional
     }
@@ -174,7 +189,7 @@ class AppState {
   tryLoad() {
     if (!this._isStorageAvailable()) return false;
     try {
-      const raw = localStorage.getItem('diannewheel_state');
+      const raw = localStorage.getItem(storageKey);
       if (!raw) return false;
       const data = JSON.parse(raw);
       if (data.options && Array.isArray(data.options)) {

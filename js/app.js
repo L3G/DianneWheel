@@ -1,7 +1,7 @@
 // Main application — wires together all modules
 // ================================================
 
-import { state } from './state.js';
+import { state, channelName, wheelId } from './state.js';
 import { wheel } from './wheel.js';
 import { initEditor, renderList } from './editor.js';
 import { initSettings, applyControlsVisibility } from './settings.js';
@@ -61,6 +61,25 @@ function init() {
   // Expose global trigger for future automation
   // (Stream Deck, Mix It Up, Firebot, websocket, etc.)
   window.spinWheel = triggerSpin;
+
+  // --- BroadcastChannel: remote control support ---
+  // Allows a separate control.html tab (same origin, same browser)
+  // to trigger spins and receive results. This is how the streamer
+  // controls the OBS overlay from another tab.
+  try {
+    const channel = new BroadcastChannel(channelName);
+    channel.onmessage = (e) => {
+      if (e.data?.type === 'spin') triggerSpin();
+    };
+    // Broadcast results back so the control page can show them
+    state.subscribe(() => {
+      if (state.currentWinner) {
+        channel.postMessage({ type: 'result', winner: state.currentWinner });
+      }
+    });
+  } catch {
+    // BroadcastChannel not supported — remote control won't work, that's OK
+  }
 
   // Overlay mode is purely URL-driven — not persisted to localStorage.
   // Normal URL = always shows controls. ?overlay=true = always hides them.

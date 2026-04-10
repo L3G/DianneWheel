@@ -41,15 +41,50 @@ Click the ⚙ gear icon in the top right to open settings:
 
 ## Using in OBS as a stream overlay
 
-1. In OBS, add a **Browser Source**
-2. Set the URL to your deployed site with `?overlay=true` at the end:
+You need **two browser tabs** open in the same browser (e.g. Chrome):
+
+### Tab 1: The overlay (what viewers see)
+
+1. Open your site with `?overlay=true` at the end:
    ```
    https://your-site-here.pages.dev/?overlay=true
    ```
-3. Set width to **1920** and height to **1080**
-4. The wheel appears with a transparent background over your stream
+2. This shows just the wheel with a transparent background — no controls.
 
-To trigger a spin from the overlay, use the on-screen button or call `window.spinWheel()` from an automation tool.
+### Tab 2: The remote control (what you use)
+
+1. Open the control page:
+   ```
+   https://your-site-here.pages.dev/control.html
+   ```
+2. This has a big SPIN button and shows results.
+3. When you click SPIN here, the wheel in Tab 1 spins automatically.
+
+### Adding it to OBS
+
+1. In OBS, add a **Window Capture** source
+2. Select the browser window/tab that has the overlay open
+3. Crop it to just the wheel area if needed
+4. When you click SPIN on the control page, the captured wheel spins live on stream
+
+**Alternatively**, you can add a **Browser Source** in OBS pointed at the `?overlay=true` URL, and spin it by right-clicking the source → **Interact** → clicking the SPIN button. The remote control method above is easier during a live stream.
+
+---
+
+## Multiple wheels
+
+You can run separate wheels (with their own options and history) by adding `?wheel=` to the URL. For example:
+
+| What | URL |
+|------|-----|
+| Main wheel | `your-site.pages.dev` |
+| Main wheel overlay | `your-site.pages.dev/?overlay=true` |
+| Main wheel remote | `your-site.pages.dev/control.html` |
+| Val wheel | `your-site.pages.dev/?wheel=val` |
+| Val wheel overlay | `your-site.pages.dev/?overlay=true&wheel=val` |
+| Val wheel remote | `your-site.pages.dev/control.html?wheel=val` |
+
+Each wheel saves its own options separately. You can have as many as you want — just change the name after `wheel=`.
 
 ---
 

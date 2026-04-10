@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DianneWheel — Remote Control</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #0f0f1a;
+      color: #e8e8f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 32px;
+      padding: 24px;
+    }
+
+    h1 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #9d9db5;
+    }
+
+    h1 span { color: #6366f1; }
+
+    #spin-btn {
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      border: none;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: white;
+      font-size: 36px;
+      font-weight: 800;
+      font-family: inherit;
+      letter-spacing: 3px;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 8px 30px rgba(99, 102, 241, 0.4);
+      text-transform: uppercase;
+    }
+
+    #spin-btn:hover:not(:disabled) {
+      transform: scale(1.05);
+      box-shadow: 0 12px 40px rgba(99, 102, 241, 0.5);
+    }
+
+    #spin-btn:active:not(:disabled) {
+      transform: scale(0.97);
+    }
+
+    #spin-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    #status {
+      font-size: 14px;
+      color: #6b6b85;
+      text-align: center;
+      min-height: 20px;
+    }
+
+    #status.connected { color: #22c55e; }
+    #status.error { color: #ef4444; }
+
+    #winner-display {
+      text-align: center;
+      min-height: 80px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .winner-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #6366f1;
+    }
+
+    .winner-text {
+      font-size: 28px;
+      font-weight: 800;
+      color: #e8e8f0;
+    }
+
+    .winner-time {
+      font-size: 12px;
+      color: #6b6b85;
+    }
+
+    #history {
+      width: 100%;
+      max-width: 400px;
+    }
+
+    #history h2 {
+      font-size: 13px;
+      color: #9d9db5;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .history-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 12px;
+      background: #1a1a2e;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+
+    .history-item .label { color: #e8e8f0; font-weight: 500; }
+    .history-item .time { color: #6b6b85; }
+
+    .hint {
+      max-width: 420px;
+      text-align: center;
+      font-size: 13px;
+      color: #6b6b85;
+      line-height: 1.6;
+      border-top: 1px solid #2a2a42;
+      padding-top: 20px;
+    }
+
+    kbd {
+      background: #1a1a2e;
+      border: 1px solid #2a2a42;
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-family: inherit;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1><span>🎡</span> DianneWheel — <span id="wheel-name">Remote Control</span></h1>
+
+  <div id="status">Connecting to wheel...</div>
+
+  <button id="spin-btn">SPIN</button>
+
+  <div id="winner-display"></div>
+
+  <div id="history">
+    <h2>Recent Results</h2>
+    <div class="history-list" id="history-list"></div>
+  </div>
+
+  <div class="hint">
+    Press the big button or hit <kbd>Spacebar</kbd> to spin.<br>
+    The wheel overlay must be open in another tab in this same browser.
+  </div>
+
+  <script>
+    const spinBtn = document.getElementById('spin-btn');
+    const statusEl = document.getElementById('status');
+    const winnerEl = document.getElementById('winner-display');
+    const historyList = document.getElementById('history-list');
+
+    let channel = null;
+    let spinning = false;
+    const results = [];
+
+    // Read ?wheel= param so control page connects to the right wheel
+    const params = new URLSearchParams(window.location.search);
+    const wheelId = params.get('wheel') || 'default';
+    const channelName = wheelId === 'default' ? 'diannewheel' : `diannewheel_${wheelId}`;
+
+    // Show which wheel this controls
+    if (wheelId !== 'default') {
+      document.getElementById('wheel-name').textContent = `${wheelId} wheel`;
+    }
+
+    // --- BroadcastChannel setup ---
+    try {
+      channel = new BroadcastChannel(channelName);
+      statusEl.textContent = `Connected — ready to spin${wheelId !== 'default' ? ` (${wheelId})` : ''}`;
+      statusEl.className = 'connected';
+
+      channel.onmessage = (e) => {
+        if (e.data?.type === 'result') {
+          spinning = false;
+          spinBtn.disabled = false;
+          spinBtn.textContent = 'SPIN';
+          showWinner(e.data.winner);
+        }
+      };
+    } catch {
+      statusEl.textContent = 'BroadcastChannel not supported in this browser';
+      statusEl.className = 'error';
+      spinBtn.disabled = true;
+    }
+
+    // --- Spin trigger ---
+    function triggerSpin() {
+      if (spinning || !channel) return;
+      spinning = true;
+      spinBtn.disabled = true;
+      spinBtn.textContent = '...';
+      channel.postMessage({ type: 'spin' });
+
+      // Safety timeout: re-enable after 12s in case result message is lost
+      setTimeout(() => {
+        if (spinning) {
+          spinning = false;
+          spinBtn.disabled = false;
+          spinBtn.textContent = 'SPIN';
+        }
+      }, 12000);
+    }
+
+    spinBtn.addEventListener('click', triggerSpin);
+
+    // Spacebar trigger
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        triggerSpin();
+      }
+    });
+
+    // --- Display ---
+    function showWinner(winner) {
+      const time = new Date(winner.timestamp);
+      const timeStr = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      winnerEl.innerHTML = `
+        <div class="winner-label">Winner!</div>
+        <div class="winner-text">${escapeHtml(winner.label)}</div>
+        <div class="winner-time">${timeStr}</div>
+      `;
+
+      results.unshift(winner);
+      if (results.length > 10) results.length = 10;
+      renderHistory();
+    }
+
+    function renderHistory() {
+      if (results.length === 0) {
+        historyList.innerHTML = '';
+        return;
+      }
+      historyList.innerHTML = results.map(r => {
+        const time = new Date(r.timestamp);
+        const timeStr = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        return `<div class="history-item">
+          <span class="label">${escapeHtml(r.label)}</span>
+          <span class="time">${timeStr}</span>
+        </div>`;
+      }).join('');
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+  </script>
+
+</body>
+</html>
