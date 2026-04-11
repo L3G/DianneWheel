@@ -883,19 +883,10 @@ body.overlay-mode .wheel-container {
   width: min(85vh, 85vw, 800px);
 }
 
+/* Overlay mode: hide the spin button entirely — OBS Browser Source
+   can't be clicked, and the control.html remote is the real trigger. */
 body.overlay-mode #spin-btn {
-  position: fixed;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 50;
-  opacity: 0.7;
-  transition: opacity 0.2s, transform 0.2s;
-}
-
-body.overlay-mode #spin-btn:hover:not(:disabled) {
-  opacity: 1;
-  transform: translateX(-50%) translateY(-2px);
+  display: none;
 }
 
 /* Winner banner adjustments for overlay */
