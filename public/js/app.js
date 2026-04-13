@@ -200,8 +200,21 @@ function triggerSpin() {
   const enabled = state.enabledOptions;
   const n = enabled.length;
 
-  // 1. Pick winner first (deterministic)
-  const winnerIndex = Math.floor(Math.random() * n);
+  // 1. Pick winner first (deterministic).
+  // Rigged: if "marbles" is on the wheel, it wins exactly 1/5 of spins.
+  // The other 4/5 is distributed uniformly across the non-marbles options.
+  const marblesIdx = enabled.findIndex(o => o.label.trim().toLowerCase() === 'marbles');
+  let winnerIndex;
+  if (marblesIdx !== -1 && n > 1) {
+    if (Math.random() < 0.2) {
+      winnerIndex = marblesIdx;
+    } else {
+      const pool = enabled.map((_, i) => i).filter(i => i !== marblesIdx);
+      winnerIndex = pool[Math.floor(Math.random() * pool.length)];
+    }
+  } else {
+    winnerIndex = Math.floor(Math.random() * n);
+  }
   const winner = enabled[winnerIndex];
 
   // 2. Start spin state
