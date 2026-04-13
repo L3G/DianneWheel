@@ -206,11 +206,15 @@ class Wheel {
 
     // Add 5-8 full rotations for visual spin
     const extraRotations = (5 + Math.floor(Math.random() * 4)) * TAU;
-    const totalRotation = targetRotation + extraRotations;
 
-    // Calculate delta from current rotation
+    // Delta must be computed relative to where we currently are.
+    // We want the final rotation (mod TAU) to equal targetRotation, while
+    // still moving through extraRotations worth of full turns. So take the
+    // modular "short way" from startRotation to targetRotation, then add
+    // the spin drama on top.
     const startRotation = this.rotation;
-    const delta = totalRotation;
+    const shortWay = ((targetRotation - startRotation) % TAU + TAU) % TAU;
+    const delta = shortWay + extraRotations;
 
     const startTime = performance.now();
 
