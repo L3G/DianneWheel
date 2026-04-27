@@ -91,15 +91,10 @@ function init() {
   if (ctrl) ctrl.checked = !isOverlay;
   applyControlsVisibility(!isOverlay);
 
-  // Overlay splits the 1920x1080 OBS canvas in half: wheel on the left,
-  // an auto-starting marble race on the right. Loading the iframe src is
-  // deferred so the editor / control views never fetch the mables bundle.
+  // The wheel caches its canvas size when its module loads, before the
+  // overlay class has been added to <body>. Nudge it to remeasure against
+  // the post-overlay container width.
   if (isOverlay) {
-    const frame = document.getElementById('mables-frame');
-    if (frame && !frame.src) frame.src = 'mables/index.html?overlay=1';
-    // The wheel caches its canvas size when its module loads, before the
-    // overlay class has been added to <body>. Nudge it to remeasure against
-    // the post-overlay container width.
     window.dispatchEvent(new Event('resize'));
   }
 
